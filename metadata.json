@@ -1,0 +1,5 @@
+{
+  "name": "IntelliPlan: Personalized Study Plan Generator",
+  "description": "An intelligent study plan generator that creates, adapts, and optimizes a student’s study schedule based on performance, difficulty, and time availability. This frontend-only application focuses on adaptability, clarity, and motivation.",
+  "requestFramePermissions": []
+}
