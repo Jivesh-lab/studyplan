@@ -1,6 +1,7 @@
 
 import React, { useContext, useMemo } from 'react';
 import { StudyPlanContext } from '../context/StudyPlanContext.jsx';
+import WeaknessActionCard from './WeaknessActionCard.jsx';
 
 // Note: In a real project, you'd install recharts. For this environment, we'll mock the charts.
 // This is a limitation of not having a build step. For a functional demo, we'll render SVGs.
@@ -46,6 +47,8 @@ const Analytics = () => {
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold text-slate-800">Your Progress</h1>
+      
+      <WeaknessActionCard />
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard title="Overall Completion" value={`${stats.completionPercentage.toFixed(1)}%`} />

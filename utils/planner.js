@@ -1,4 +1,7 @@
 
+import { planWithRevisions } from './revisionBooster.js';
+import { toISODate, getTodayISODate, getYesterdayISODate } from './date.js';
+
 const SKILL_WEIGHTS = {
   Beginner: 3,
   Medium: 2,
@@ -46,7 +49,7 @@ export const generateInitialPlan = (userProfile) => {
   for (let day = 0; day < PLAN_DURATION_DAYS; day++) {
     const date = new Date(today);
     date.setDate(today.getDate() + day);
-    const dateString = date.toISOString().split('T')[0];
+    const dateString = toISODate(date);
     
     let startHour = studyTime === 'Morning' ? 8 : 19;
 
@@ -61,18 +64,21 @@ export const generateInitialPlan = (userProfile) => {
           startTime: startHour + hour,
           duration: 1,
           status: 'Pending', // Pending, Completed, Missed, Partially Done
+          isRevision: false,
+          revisionOffsetDays: 0,
         });
         topicIndex++;
       }
     }
   }
 
-  return plan;
+  // Add Revision Booster: 1-day and 7-day spaced slots
+  return planWithRevisions(plan);
 };
 
 export const adaptPlan = (currentPlan, userProfile) => {
   const today = new Date();
-  const todayString = today.toISOString().split('T')[0];
+  const todayString = getTodayISODate();
 
   const missedTasks = currentPlan.filter(task => {
     const taskDate = new Date(task.date);
@@ -126,4 +132,115 @@ export const adaptPlan = (currentPlan, userProfile) => {
       }
       return task;
   }).concat(adaptablePlan.filter(task => !currentPlan.find(p => p.id === task.id))); // Add newly scheduled tasks
+};
+
+// Find weak subjects and determine causes
+export const findWeakSubjectsWithCauses = (studyPlan, userProfile) => {
+  if (!studyPlan || !userProfile) return [];
+
+  const today = new Date();
+  const subjectData = userProfile.subjects.map(subject => {
+    const subjectTasks = studyPlan.filter(t => t.subject === subject.name && new Date(t.date) <= today);
+    
+    if (subjectTasks.length < 2) {
+      return null; // Skip subjects with less than 2 tasks
+    }
+
+    const totalTasks = subjectTasks.length;
+    const completedTasks = subjectTasks.filter(t => t.status === 'Completed').length;
+    const missedTasks = subjectTasks.filter(t => t.status === 'Missed').length;
+    const completionPercentage = (completedTasks / totalTasks) * 100;
+
+    // Only show card if there are MISSED tasks
+    if (missedTasks === 0) {
+      return null; // No missed tasks = no weakness card
+    }
+
+    // Only return if completion < 50%
+    if (completionPercentage >= 50) {
+      return null;
+    }
+
+    // Determine the cause of weakness
+    let cause = 'Inconsistent progress';
+    const missedPercentage = (missedTasks / totalTasks) * 100;
+    const plannedHours = subjectTasks.length; // Each task is 1 hour
+    const completedHours = completedTasks; // Only completed tasks count
+
+    if (missedPercentage > 40) {
+      cause = 'Missed tasks';
+    } else if (completedHours < (plannedHours * 0.6)) {
+      cause = 'Low study time';
+    }
+
+    return {
+      subjectName: subject.name,
+      completionPercentage: Math.round(completionPercentage),
+      cause,
+      totalTasks,
+      completedTasks,
+      missedTasks,
+    };
+  });
+
+  return subjectData.filter(s => s !== null);
+};
+
+// Generate suggested actions based on cause
+export const generateSuggestedActions = (subjectName, cause) => {
+  const actionTemplates = {
+    'Missed tasks': [
+      { title: 'Watch topic video', duration: 20, type: 'video' },
+      { title: 'Practice questions', duration: 15, type: 'practice' },
+      { title: 'Quick revision', duration: 10, type: 'revision' },
+    ],
+    'Low study time': [
+      { title: 'Short focus session', duration: 25, type: 'focus' },
+      { title: 'Notes reading', duration: 10, type: 'notes' },
+      { title: 'One practice set', duration: 15, type: 'practice' },
+    ],
+    'Low quiz score': [
+      { title: 'Revise weak topics', duration: 20, type: 'revision' },
+      { title: 'Example-based learning', duration: 15, type: 'examples' },
+      { title: 'Mini quiz', duration: 10, type: 'quiz' },
+    ],
+    'Inconsistent progress': [
+      { title: 'Watch topic video', duration: 20, type: 'video' },
+      { title: 'Practice questions', duration: 15, type: 'practice' },
+      { title: 'Quick revision', duration: 10, type: 'revision' },
+    ],
+  };
+
+  const actions = actionTemplates[cause] || actionTemplates['Inconsistent progress'];
+  return actions.map((action, index) => ({
+    id: uuid(),
+    subject: subjectName,
+    unit: `${cause} - ${action.title}`,
+    title: action.title,
+    duration: action.duration,
+    type: action.type,
+    actionIndex: index,
+  }));
+};
+
+// Create task from action
+export const createTaskFromAction = (action, userProfile) => {
+  const today = new Date();
+  
+  let startHour = userProfile.studyTime === 'Morning' ? 8 : 19;
+  // Schedule for tomorrow to avoid conflicts
+  const tomorrow = new Date(today);
+  tomorrow.setDate(today.getDate() + 1);
+  const tomorrowString = toISODate(tomorrow);
+
+  return {
+    id: uuid(),
+    date: tomorrowString,
+    subject: action.subject,
+    unit: action.unit,
+    startTime: startHour,
+    duration: Math.ceil(action.duration / 60), // Convert minutes to hours
+    status: 'Pending',
+    isActionTask: true, // Mark as action task
+  };
 };

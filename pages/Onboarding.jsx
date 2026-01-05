@@ -58,7 +58,7 @@ const Onboarding = ({ onComplete }) => {
       case 2:
         return <Step2 subjects={subjects} handleChange={handleSubjectChange} addSubject={addSubject} removeSubject={removeSubject} nextStep={nextStep} prevStep={prevStep} />;
       case 3:
-        return <Step3 profile={profile} subjects={subjects} handleSubmit={handleSubmit} prevStep={prevStep} />;
+        return <Step3 profile={profile} subjects={subjects} handleChange={handleProfileChange} handleSubmit={handleSubmit} prevStep={prevStep} />;
       default:
         return <Step1 profile={profile} handleChange={handleProfileChange} nextStep={nextStep} />;
     }
@@ -123,24 +123,24 @@ const Step2 = ({ subjects, handleChange, addSubject, removeSubject, nextStep, pr
 );
 
 
-const Step3 = ({ profile, subjects, handleSubmit, prevStep }) => (
+const Step3 = ({ profile, subjects, handleChange, handleSubmit, prevStep }) => (
     <div>
         <h2 className="text-2xl font-semibold mb-6 text-slate-700">Set your study habits</h2>
         <div className="space-y-6">
             <div>
                 <label htmlFor="dailyHours" className="block text-sm font-medium text-slate-700">How many hours can you study per day?</label>
-                <input id="dailyHours" type="range" name="dailyHours" min="1" max="10" value={profile.dailyHours} onChange={profile.handleChange} className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer" />
+                <input id="dailyHours" type="range" name="dailyHours" min="1" max="10" value={profile.dailyHours} onChange={handleChange} className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer" />
                 <div className="text-center font-semibold text-indigo-600 mt-2">{profile.dailyHours} hours</div>
             </div>
             <div>
                 <label className="block text-sm font-medium text-slate-700">When do you prefer to study?</label>
                 <div className="mt-2 grid grid-cols-2 gap-4">
                     <label className={`p-4 border rounded-lg cursor-pointer text-center ${profile.studyTime === 'Morning' ? 'bg-indigo-100 border-indigo-500 ring-2 ring-indigo-500' : 'border-slate-300'}`}>
-                        <input type="radio" name="studyTime" value="Morning" checked={profile.studyTime === 'Morning'} onChange={profile.handleChange} className="sr-only"/>
+                        <input type="radio" name="studyTime" value="Morning" checked={profile.studyTime === 'Morning'} onChange={handleChange} className="sr-only"/>
                         ☀️ Morning
                     </label>
                     <label className={`p-4 border rounded-lg cursor-pointer text-center ${profile.studyTime === 'Night' ? 'bg-indigo-100 border-indigo-500 ring-2 ring-indigo-500' : 'border-slate-300'}`}>
-                        <input type="radio" name="studyTime" value="Night" checked={profile.studyTime === 'Night'} onChange={profile.handleChange} className="sr-only"/>
+                        <input type="radio" name="studyTime" value="Night" checked={profile.studyTime === 'Night'} onChange={handleChange} className="sr-only"/>
                         🌙 Night
                     </label>
                 </div>
