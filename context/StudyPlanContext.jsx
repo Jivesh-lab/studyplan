@@ -12,9 +12,11 @@ export const StudyPlanContext = createContext({
   studyPlan: [],
   streak: { current: 0, lastCompletedDate: null },
   achievements: [],
+  exams: [],
   updateTaskStatus: () => {},
   loading: true,
   refreshPlanFromStorage: () => {},
+  updateExams: () => {},
 });
 
 /* -------------------- PROVIDER -------------------- */
@@ -26,6 +28,7 @@ export const StudyPlanProvider = ({ children }) => {
     lastCompletedDate: null,
   });
   const [achievements, setAchievements] = useState([]);
+  const [exams, setExams] = useState([]);
   const [loading, setLoading] = useState(true);
 
   /* -------------------- INITIAL LOAD -------------------- */
@@ -37,6 +40,8 @@ export const StudyPlanProvider = ({ children }) => {
         JSON.parse(localStorage.getItem("studyStreak")) || streak;
       const storedAchievements =
         JSON.parse(localStorage.getItem("achievements")) || [];
+      const storedExams = 
+        JSON.parse(localStorage.getItem("exams")) || [];
 
       if (storedProfile && storedPlan) {
         setUserProfile(storedProfile);
@@ -49,6 +54,7 @@ export const StudyPlanProvider = ({ children }) => {
 
       setStreak(storedStreak);
       setAchievements(storedAchievements);
+      setExams(storedExams);
     } catch (err) {
       console.error("LocalStorage load failed:", err);
     } finally {
@@ -58,30 +64,40 @@ export const StudyPlanProvider = ({ children }) => {
 
   /* -------------------- UPDATE TASK STATUS -------------------- */
   const updateTaskStatus = useCallback(
-    (taskId, status) => {
+    (taskIdOrPlan, status) => {
+      // Support two modes: updateTaskStatus(id, status) or updateTaskStatus(fullPlan)
+      let updatedPlan;
       let updatedStreak = { ...streak };
       let updatedAchievements = [...achievements];
 
-      const today = new Date().toISOString().split("T")[0];
-      const yesterday = new Date(Date.now() - 864e5)
-        .toISOString()
-        .split("T")[0];
+      // Check if first parameter is an array (full plan) or string (task ID)
+      if (Array.isArray(taskIdOrPlan)) {
+        // Mode 1: Full plan replacement (for Emergency Catch-Up)
+        updatedPlan = taskIdOrPlan;
+      } else {
+        // Mode 2: Single task update by ID and status
+        const taskId = taskIdOrPlan;
+        const today = new Date().toISOString().split("T")[0];
+        const yesterday = new Date(Date.now() - 864e5)
+          .toISOString()
+          .split("T")[0];
 
-      const updatedPlan = studyPlan.map((task) => {
-        if (task.id === taskId) {
-          if (status === "Completed" && task.status !== "Completed") {
-            if (streak.lastCompletedDate !== today) {
-              updatedStreak.current =
-                streak.lastCompletedDate === yesterday
-                  ? updatedStreak.current + 1
-                  : 1;
-              updatedStreak.lastCompletedDate = today;
+        updatedPlan = studyPlan.map((task) => {
+          if (task.id === taskId) {
+            if (status === "Completed" && task.status !== "Completed") {
+              if (streak.lastCompletedDate !== today) {
+                updatedStreak.current =
+                  streak.lastCompletedDate === yesterday
+                    ? updatedStreak.current + 1
+                    : 1;
+                updatedStreak.lastCompletedDate = today;
+              }
             }
+            return { ...task, status };
           }
-          return { ...task, status };
-        }
-        return task;
-      });
+          return task;
+        });
+      }
 
       const completedCount = updatedPlan.filter(
         (t) => t.status === "Completed"
@@ -135,13 +151,21 @@ export const StudyPlanProvider = ({ children }) => {
       window.removeEventListener("storage", refreshPlanFromStorage);
   }, [refreshPlanFromStorage]);
 
+  /* -------------------- UPDATE EXAMS -------------------- */
+  const updateExams = useCallback((newExams) => {
+    setExams(newExams);
+    localStorage.setItem("exams", JSON.stringify(newExams));
+  }, []);
+
   /* -------------------- PROVIDER VALUE -------------------- */
   const value = {
     userProfile,
     studyPlan,
     streak,
     achievements,
+    exams,
     updateTaskStatus,
+    updateExams,
     loading,
     refreshPlanFromStorage,
   };

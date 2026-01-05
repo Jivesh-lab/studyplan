@@ -244,3 +244,107 @@ export const createTaskFromAction = (action, userProfile) => {
     isActionTask: true, // Mark as action task
   };
 };
+
+/* -------------------- STUDY LOAD METER -------------------- */
+
+/**
+ * Calculate total study minutes for a specific date
+ * @param {Array} studyPlan - The complete study plan
+ * @param {string} dateString - Date in ISO format (YYYY-MM-DD)
+ * @returns {number} Total minutes planned for that date
+ */
+export const calculateDailyStudyMinutes = (studyPlan, dateString) => {
+  if (!studyPlan || !dateString) return 0;
+  
+  return studyPlan
+    .filter(task => task.date === dateString && task.status !== 'Rescheduled')
+    .reduce((total, task) => total + (task.duration * 60), 0); // Convert hours to minutes
+};
+
+/**
+ * Determine study load level based on daily capacity
+ * @param {number} dailyMinutes - Total study minutes planned
+ * @param {number} dailyCapacity - User's daily study capacity in minutes (from userProfile)
+ * @returns {Object} Load level with status, color, and percentage
+ */
+export const getStudyLoadLevel = (dailyMinutes, dailyCapacity = 240) => {
+  const percentage = (dailyMinutes / dailyCapacity) * 100;
+  
+  let level = 'Low';
+  let color = 'green';
+  let backgroundColor = 'bg-green-50';
+  let borderColor = 'border-green-300';
+  let textColor = 'text-green-700';
+  let meterColor = 'bg-green-500';
+  
+  if (percentage >= 120) {
+    // Over capacity
+    level = 'Overloaded';
+    color = 'red';
+    backgroundColor = 'bg-red-50';
+    borderColor = 'border-red-300';
+    textColor = 'text-red-700';
+    meterColor = 'bg-red-500';
+  } else if (percentage >= 85) {
+    // Near or at capacity
+    level = 'High';
+    color = 'amber';
+    backgroundColor = 'bg-amber-50';
+    borderColor = 'border-amber-300';
+    textColor = 'text-amber-700';
+    meterColor = 'bg-amber-500';
+  } else if (percentage >= 50) {
+    // Medium load
+    level = 'Medium';
+    color = 'blue';
+    backgroundColor = 'bg-blue-50';
+    borderColor = 'border-blue-300';
+    textColor = 'text-blue-700';
+    meterColor = 'bg-blue-500';
+  }
+  
+  return {
+    level,
+    color,
+    backgroundColor,
+    borderColor,
+    textColor,
+    meterColor,
+    percentage: Math.min(100, percentage), // Cap at 100 for visual meter
+    actualPercentage: percentage,
+  };
+};
+
+/**
+ * Generate suggestion based on study load
+ * @param {number} dailyMinutes - Total study minutes planned
+ * @param {number} dailyCapacity - User's daily capacity in minutes
+ * @returns {string} Suggestion message
+ */
+export const getStudyLoadSuggestion = (dailyMinutes, dailyCapacity = 240) => {
+  const excess = dailyMinutes - dailyCapacity;
+  
+  if (excess <= 0) return '✓ Load within healthy limits';
+  
+  const excessMinutes = Math.ceil(excess / 30) * 30; // Round up to nearest 30 min
+  return `⚠️ Consider moving ${excessMinutes}m to tomorrow`;
+};
+
+/**
+ * Get all daily study minutes for the week (for analytics)
+ * @param {Array} studyPlan - The complete study plan
+ * @param {Date} startDate - Start date of the week
+ * @returns {Object} Daily minutes keyed by date
+ */
+export const getWeeklyStudyMinutes = (studyPlan, startDate = new Date()) => {
+  const weekMinutes = {};
+  
+  for (let i = 0; i < 7; i++) {
+    const date = new Date(startDate);
+    date.setDate(startDate.getDate() + i);
+    const dateString = toISODate(date);
+    weekMinutes[dateString] = calculateDailyStudyMinutes(studyPlan, dateString);
+  }
+  
+  return weekMinutes;
+};

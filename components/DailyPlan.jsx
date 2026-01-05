@@ -2,6 +2,9 @@
 import React, { useContext, useMemo } from 'react';
 import { StudyPlanContext } from '../context/StudyPlanContext.jsx';
 import TaskItem from './TaskItem.jsx';
+import StudyLoadMeter from './StudyLoadMeter.jsx';
+import ExamCountdown from './ExamCountdown.jsx';
+import { CatchupSuggestion } from './CatchupSuggestion.jsx';
 
 const DailyPlan = () => {
   const { studyPlan, streak, loading } = useContext(StudyPlanContext);
@@ -44,6 +47,15 @@ const DailyPlan = () => {
           <p className="text-right text-sm mt-1 text-slate-500">{Math.round(progress)}% Complete</p>
         </div>
       </div>
+
+      {/* Exam Countdown */}
+      <ExamCountdown />
+
+      {/* Emergency Catch-Up Suggestion */}
+      <CatchupSuggestion />
+
+      {/* Study Load Meter */}
+      <StudyLoadMeter />
 
       <div className="bg-white p-6 rounded-2xl shadow-lg">
         <h2 className="text-xl font-bold text-slate-700 mb-4">Tasks</h2>
