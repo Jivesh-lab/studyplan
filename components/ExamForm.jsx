@@ -114,26 +114,23 @@ const ExamForm = ({ exam = null, onClose, onSave }) => {
             
             {/* Subject Input */}
             <div className="flex gap-2 mb-3">
-              <select
-                value={newSubject}
-                onChange={(e) => setNewSubject(e.target.value)}
-                className="flex-1 px-3 py-2 border-2 border-slate-300 rounded-lg focus:border-indigo-500 focus:outline-none text-slate-800"
-              >
-                <option value="">Select subject...</option>
-                {userProfile?.subjects?.map(subject => (
-                  <option key={subject.name} value={subject.name}>
-                    {subject.name}
-                  </option>
-                ))}
-              </select>
-              <button
-                type="button"
-                onClick={handleAddSubject}
-                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-semibold"
-              >
-                Add
-              </button>
-            </div>
+  <input
+    type="text"
+    value={newSubject}
+    onChange={(e) => setNewSubject(e.target.value)}
+    placeholder="Enter subject..."
+    className="flex-1 px-3 py-2 border-2 border-slate-300 rounded-lg focus:border-indigo-500 focus:outline-none text-slate-800"
+  />
+
+  <button
+    type="button"
+    onClick={handleAddSubject}
+    className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-semibold"
+  >
+    Add
+  </button>
+</div>
+
 
             {/* Selected Subjects */}
             {formData.subjects.length > 0 && (
