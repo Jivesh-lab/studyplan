@@ -4,7 +4,6 @@ import { StudyPlanContext } from '../context/StudyPlanContext.jsx';
 import TaskItem from './TaskItem.jsx';
 import StudyLoadMeter from './StudyLoadMeter.jsx';
 import ExamCountdown from './ExamCountdown.jsx';
-import { CatchupSuggestion } from './CatchupSuggestion.jsx';
 
 const DailyPlan = () => {
   const { studyPlan, streak, loading } = useContext(StudyPlanContext);
@@ -14,7 +13,7 @@ const DailyPlan = () => {
   const todaysTasks = useMemo(() => {
     if (!studyPlan) return [];
     return studyPlan
-      .filter(task => task.date === today)
+      .filter(task => task.date === today && task.status !== 'Completed') // Hide completed tasks
       .sort((a, b) => a.startTime - b.startTime);
   }, [studyPlan, today]);
 
@@ -50,9 +49,6 @@ const DailyPlan = () => {
 
       {/* Exam Countdown */}
       <ExamCountdown />
-
-      {/* Emergency Catch-Up Suggestion */}
-      <CatchupSuggestion />
 
       {/* Study Load Meter */}
       <StudyLoadMeter />

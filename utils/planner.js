@@ -17,7 +17,11 @@ const uuid = () => 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => 
 });
 
 export const generateInitialPlan = (userProfile) => {
-  const { subjects, dailyHours, studyTime } = userProfile;
+  const { subjects, dailyHours, studyTime, scheduleDuration = 30 } = userProfile;
+
+  // ✅ NEW: Respect max 3-4 tasks per day (or 5 with revision)
+  const maxTasksPerDay = 3; // Base tasks per day
+  const daysToGenerate = scheduleDuration || 30;
 
   const weightedTopics = [];
   subjects.forEach(subject => {
@@ -29,10 +33,10 @@ export const generateInitialPlan = (userProfile) => {
   });
 
   const totalWeight = weightedTopics.reduce((sum, topic) => sum + topic.weight, 0);
-  const totalStudySlots = dailyHours * PLAN_DURATION_DAYS;
+  const totalTasks = maxTasksPerDay * daysToGenerate; // Limit to 3-4 tasks per day
 
   const topicSchedule = weightedTopics.flatMap(topic => {
-    const slots = Math.round((topic.weight / totalWeight) * totalStudySlots);
+    const slots = Math.round((topic.weight / totalWeight) * totalTasks);
     return Array(slots).fill({ subject: topic.subject, unit: topic.unit });
   });
 
@@ -44,16 +48,21 @@ export const generateInitialPlan = (userProfile) => {
 
   const plan = [];
   let topicIndex = 0;
+  let tasksPerCurrentDay = 0;
   const today = new Date();
 
-  for (let day = 0; day < PLAN_DURATION_DAYS; day++) {
+  for (let day = 0; day < daysToGenerate; day++) {
     const date = new Date(today);
     date.setDate(today.getDate() + day);
     const dateString = toISODate(date);
     
     let startHour = studyTime === 'Morning' ? 8 : 19;
+    tasksPerCurrentDay = 0; // Reset counter for each day
 
-    for (let hour = 0; hour < dailyHours; hour++) {
+    // Add exactly 3-4 tasks per day (random between 3-4)
+    const tasksForThisDay = Math.random() < 0.5 ? 3 : 4;
+
+    for (let taskNum = 0; taskNum < tasksForThisDay; taskNum++) {
       if (topicIndex < topicSchedule.length) {
         const topic = topicSchedule[topicIndex];
         plan.push({
@@ -61,18 +70,19 @@ export const generateInitialPlan = (userProfile) => {
           date: dateString,
           subject: topic.subject,
           unit: topic.unit,
-          startTime: startHour + hour,
+          startTime: startHour + taskNum,
           duration: 1,
-          status: 'Pending', // Pending, Completed, Missed, Partially Done
+          status: 'Pending',
           isRevision: false,
           revisionOffsetDays: 0,
         });
         topicIndex++;
+        tasksPerCurrentDay++;
       }
     }
   }
 
-  // Add Revision Booster: 1-day and 7-day spaced slots
+  // Add Revision Booster: 1-day and 7-day spaced slots (max 5 total = 3-4 base + 1-2 revision)
   return planWithRevisions(plan);
 };
 
