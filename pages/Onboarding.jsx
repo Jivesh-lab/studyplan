@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { generateInitialPlan } from '../utils/planner.js';
 
@@ -9,6 +8,8 @@ const Onboarding = ({ onComplete }) => {
     course: '',
     dailyHours: 4,
     studyTime: 'Morning',
+    scheduleDuration: 20,
+    tasksPerDay: 3,
   });
   const [subjects, setSubjects] = useState([{ name: '', skill: 'Medium', units: 'Unit 1, Unit 2, Unit 3' }]);
 
@@ -45,7 +46,10 @@ const Onboarding = ({ onComplete }) => {
       localStorage.setItem('studyStreak', JSON.stringify({ current: 0, lastCompletedDate: null }));
       localStorage.setItem('achievements', JSON.stringify([]));
 
-      onComplete();
+      onComplete?.();
+      
+      // Force full page reload to refresh AuthContext
+      window.location.href = "/dashboard";
     } else {
       alert("Please fill in all required fields.");
     }
@@ -58,7 +62,9 @@ const Onboarding = ({ onComplete }) => {
       case 2:
         return <Step2 subjects={subjects} handleChange={handleSubjectChange} addSubject={addSubject} removeSubject={removeSubject} nextStep={nextStep} prevStep={prevStep} />;
       case 3:
-        return <Step3 profile={profile} subjects={subjects} handleChange={handleProfileChange} handleSubmit={handleSubmit} prevStep={prevStep} />;
+        return <Step3 profile={profile} handleChange={handleProfileChange} nextStep={nextStep} prevStep={prevStep} />;
+      case 4:
+        return <Step4 profile={profile} subjects={subjects} handleChange={handleProfileChange} handleSubmit={handleSubmit} prevStep={prevStep} />;
       default:
         return <Step1 profile={profile} handleChange={handleProfileChange} nextStep={nextStep} />;
     }
@@ -70,7 +76,7 @@ const Onboarding = ({ onComplete }) => {
         <h1 className="text-3xl font-bold text-center text-indigo-700 mb-2">Welcome to IntelliPlan</h1>
         <p className="text-center text-slate-500 mb-8">Let's create your personalized study plan.</p>
         <div className="relative h-1 bg-slate-200 rounded-full mb-8">
-            <div className="absolute top-0 left-0 h-1 bg-indigo-600 rounded-full transition-all duration-500" style={{width: `${(step-1)/2 * 100}%`}}></div>
+            <div className="absolute top-0 left-0 h-1 bg-indigo-600 rounded-full transition-all duration-500" style={{width: `${(step-1)/3 * 100}%`}}></div>
         </div>
         {renderStep()}
       </div>
@@ -122,8 +128,50 @@ const Step2 = ({ subjects, handleChange, addSubject, removeSubject, nextStep, pr
   </div>
 );
 
+const Step3 = ({ profile, handleChange, nextStep, prevStep }) => (
+  <div>
+    <h2 className="text-2xl font-semibold mb-6 text-slate-700">📅 Choose your study schedule</h2>
+    <p className="text-slate-600 mb-6">How long should your study plan cover?</p>
+    
+    <div className="grid grid-cols-2 gap-4 mb-8">
+      {[
+        { value: 5, label: '5 Days', emoji: '📌' },
+        { value: 15, label: '15 Days', emoji: '📅' },
+        { value: 20, label: '20 Days', emoji: '📖' },
+        { value: 30, label: '1 Month', emoji: '📚' }
+      ].map(option => (
+        <button
+          key={option.value}
+          onClick={() => handleChange({ target: { name: 'scheduleDuration', value: option.value } })}
+          className={`p-4 border-2 rounded-lg font-semibold transition-all ${
+            profile.scheduleDuration === option.value
+              ? 'bg-indigo-100 border-indigo-500 ring-2 ring-indigo-500'
+              : 'bg-white border-slate-300 hover:border-indigo-300'
+          }`}
+        >
+          <div className="text-2xl mb-2">{option.emoji}</div>
+          <div>{option.label}</div>
+        </button>
+      ))}
+    </div>
 
-const Step3 = ({ profile, subjects, handleChange, handleSubmit, prevStep }) => (
+    <div className="bg-blue-50 border border-blue-300 rounded-lg p-4 mb-8">
+      <p className="text-sm text-blue-800">
+        <strong>📌 Daily Tasks:</strong><br/>
+        • Normal: <strong>3-4 tasks</strong> per day<br/>
+        • If you miss tasks: <strong>max 5 tasks</strong> per day (includes review)<br/>
+        • Each subject gets balanced attention
+      </p>
+    </div>
+
+    <div className="mt-8 flex justify-between">
+      <button onClick={prevStep} className="px-6 py-3 bg-slate-200 text-slate-700 font-semibold rounded-lg hover:bg-slate-300 transition-colors">Back</button>
+      <button onClick={nextStep} className="px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 transition-colors">Next</button>
+    </div>
+  </div>
+);
+
+const Step4 = ({ profile, subjects, handleChange, handleSubmit, prevStep }) => (
     <div>
         <h2 className="text-2xl font-semibold mb-6 text-slate-700">Set your study habits</h2>
         <div className="space-y-6">
@@ -152,6 +200,5 @@ const Step3 = ({ profile, subjects, handleChange, handleSubmit, prevStep }) => (
         </div>
     </div>
 );
-
 
 export default Onboarding;
