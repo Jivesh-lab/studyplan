@@ -1,50 +1,61 @@
+import React from "react";
+import { Routes, Route, Navigate } from "react-router-dom";
 
-import React, { useState, useEffect } from 'react';
-import Onboarding from './pages/Onboarding.jsx';
-import Dashboard from './pages/Dashboard.jsx';
-import { StudyPlanProvider } from './context/StudyPlanContext.jsx';
-import { DndProvider } from 'react-dnd';
-import { HTML5Backend } from 'react-dnd-html5-backend';
+import { StudyPlanProvider } from "./context/StudyPlanContext.jsx";
+import { AuthProvider } from "./context/AuthContext.jsx";
+
+import { DndProvider } from "react-dnd";
+import { HTML5Backend } from "react-dnd-html5-backend";
+
+import ProtectedRoute from "./routes/ProtectedRoute.jsx";
+import PublicOnlyRoute from "./routes/PublicOnlyRoute.jsx";
+
+import LoginForm from "./pages/LoginForm.jsx";
+import SignupForm from "./pages/SignupForm.jsx";
+import Onboarding from "./pages/Onboarding.jsx";
+import Dashboard from "./pages/Dashboard.jsx";
 
 function App() {
-  const [hasProfile, setHasProfile] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const userProfile = localStorage.getItem('userProfile');
-    if (userProfile) {
-      setHasProfile(true);
-    }
-    setIsLoading(false);
-  }, []);
-
-  const handleOnboardingComplete = () => {
-    setHasProfile(true);
-  };
-  
-  const handleReset = () => {
-    if(window.confirm("Are you sure you want to reset all your data and start over?")) {
-      localStorage.clear();
-      setHasProfile(false);
-    }
-  }
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-slate-50">
-        <div className="text-xl font-semibold text-slate-600">Loading...</div>
-      </div>
-    );
-  }
-
   return (
-    <StudyPlanProvider>
-      <DndProvider backend={HTML5Backend}>
-        <div className="min-h-screen bg-slate-50 font-sans">
-          {hasProfile ? <Dashboard onReset={handleReset} /> : <Onboarding onComplete={handleOnboardingComplete} />}
-        </div>
-      </DndProvider>
-    </StudyPlanProvider>
+    <AuthProvider>
+      <StudyPlanProvider>
+        <DndProvider backend={HTML5Backend}>
+          <div className="min-h-screen bg-slate-50 font-sans">
+            <Routes>
+              {/* Public routes (login/signup) */}
+              <Route element={<PublicOnlyRoute />}>
+                <Route path="/login" element={<LoginForm />} />
+                <Route path="/signup" element={<SignupForm />} />
+              </Route>
+
+              {/* Onboarding (must be logged in) */}
+              <Route
+                path="/onboarding"
+                element={
+                  <ProtectedRoute allowOnboardingOnly={true}>
+                    <Onboarding />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Dashboard (must be logged in + onboarding complete) */}
+              <Route
+                path="/dashboard"
+                element={
+                  <ProtectedRoute>
+                    <Dashboard />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Default redirect */}
+              <Route path="/" element={<Navigate to="/login" replace />} />
+              <Route path="*" element={<Navigate to="/login" replace />} />
+            </Routes>
+          </div>
+        </DndProvider>
+      </StudyPlanProvider>
+    </AuthProvider>
   );
 }
 
