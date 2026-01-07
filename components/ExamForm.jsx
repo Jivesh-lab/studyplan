@@ -109,7 +109,7 @@ const ExamForm = ({ exam = null, onClose, onSave }) => {
           {/* Subjects */}
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-2">
-              📚 Subjects
+              📚 Subject(s) - Max 2
             </label>
             
             {/* Subject Input */}
@@ -129,11 +129,14 @@ const ExamForm = ({ exam = null, onClose, onSave }) => {
               <button
                 type="button"
                 onClick={handleAddSubject}
-                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-semibold"
+                disabled={formData.subjects.length >= 2}
+                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-semibold disabled:bg-slate-300 disabled:cursor-not-allowed"
               >
                 Add
               </button>
             </div>
+
+            <p className="text-xs text-slate-500 mb-2">💡 Each exam date can have up to 2 subjects. Create separate exams for different dates.</p>
 
             {/* Selected Subjects */}
             {formData.subjects.length > 0 && (

@@ -8,8 +8,6 @@ const Onboarding = ({ onComplete }) => {
     course: '',
     dailyHours: 4,
     studyTime: 'Morning',
-    scheduleDuration: 20,
-    tasksPerDay: 3,
   });
   const [subjects, setSubjects] = useState([{ name: '', skill: 'Medium', units: 'Unit 1, Unit 2, Unit 3' }]);
 
