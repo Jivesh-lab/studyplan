@@ -9,8 +9,16 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middleware
-app.use(cors());
+// ✅ CORS: works for BOTH local + prod
+app.use(
+  cors({
+    origin: process.env.NODE_ENV === "production"
+      ? ["https://intelliplan.vercel.app"]
+      : ["http://localhost:3000"],
+    credentials: true
+  })
+);
+
 app.use(express.json());
 
 // Routes
@@ -21,16 +29,15 @@ app.get("/", (req, res) => {
   res.json({ message: "StudyPlan API is running" });
 });
 
-// MongoDB connection
+// DB + server
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => {
     console.log("✅ MongoDB connected");
     app.listen(PORT, () => {
-      console.log(`🚀 Server running on http://localhost:${PORT}`);
+      console.log(`🚀 Server running on port ${PORT}`);
     });
   })
   .catch((err) => {
-    console.error("❌ MongoDB connection error:", err);
-    process.exit(1);
+    console.error("❌ MongoDB error:", err);
   });
