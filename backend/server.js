@@ -9,7 +9,7 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// ✅ ALLOWED ORIGINS (LOCAL + DEPLOYED)
+// ✅ Allowed origins (local + deployed)
 const allowedOrigins = [
   "http://localhost:3000",
   "http://localhost:5173",
@@ -17,27 +17,22 @@ const allowedOrigins = [
   "https://studyplan-git-main-jivesh-labs-projects.vercel.app"
 ];
 
-// ✅ CORS CONFIG (FULLY COMPATIBLE)
+// ✅ CORS (Node 22 compatible)
 app.use(
   cors({
-    origin: function (origin, callback) {
-      // allow server-to-server, curl, postman
+    origin: (origin, callback) => {
+      // allow requests without origin (Postman, server-to-server)
       if (!origin) return callback(null, true);
 
       if (allowedOrigins.includes(origin)) {
         return callback(null, true);
-      } else {
-        return callback(new Error("Not allowed by CORS"));
       }
+
+      return callback(new Error("CORS not allowed"));
     },
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"]
+    credentials: true
   })
 );
-
-// ✅ IMPORTANT: Preflight support
-app.options("*", cors());
 
 app.use(express.json());
 
