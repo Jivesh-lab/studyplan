@@ -12,10 +12,41 @@ const WeaknessActionCard = () => {
 
   useEffect(() => {
     // Find weak subjects on component mount or when data changes
-    const weak = findWeakSubjectsWithCauses(studyPlan, userProfile);
+    let weak = findWeakSubjectsWithCauses(studyPlan, userProfile);
+    
+    // Also add subjects with 2+ missed tasks TODAY as weak subjects
+    const today = new Date().toISOString().split('T')[0];
+    const todaysMissedBySubject = {};
+    studyPlan.forEach(task => {
+      if (task.date === today && task.status === 'Missed') {
+        todaysMissedBySubject[task.subject] = (todaysMissedBySubject[task.subject] || 0) + 1;
+      }
+    });
+    
+    console.log(`📊 Today's missed tasks by subject:`, todaysMissedBySubject);
+    
+    // Add subjects with 2+ missed tasks TODAY to weak subjects
+    Object.entries(todaysMissedBySubject).forEach(([subject, missedCount]) => {
+      if (missedCount >= 2) {
+        const existingWeak = weak.find(w => w.subjectName === subject);
+        if (!existingWeak) {
+          weak.push({
+            subjectName: subject,
+            completionPercentage: 0,
+            cause: 'Missed tasks',
+            totalTasks: studyPlan.filter(t => t.subject === subject).length,
+            completedTasks: studyPlan.filter(t => t.subject === subject && t.status === 'Completed').length,
+            missedTasks: missedCount,
+          });
+        }
+      }
+    });
+    
+    console.log(`🔍 Weak subjects found:`, weak);
     setWeakSubjects(weak);
     
     if (weak.length > 0 && !selectedWeakness) {
+      console.log(`✅ Selecting first weakness:`, weak[0]);
       selectWeakness(weak[0]);
     }
   }, [studyPlan, userProfile]);
@@ -61,72 +92,78 @@ const WeaknessActionCard = () => {
     alert(`✅ Added 3 actions to today's plan for ${selectedWeakness.subjectName}`);
   };
 
-  const scheduleTheseNow = () => {
-    console.log("✅ 'Schedule Next 3 Days' clicked");
-    if (!selectedWeakness || suggestedActions.length === 0) {
-      console.error("❌ No weakness or actions selected");
+  const rescheduleMissedTasks = () => {
+    console.log("✅ 'Reschedule Missed Tasks' clicked");
+    if (!selectedWeakness) {
+      console.error("❌ No weakness selected");
       return;
     }
 
-    console.log(`📋 Actions to schedule:`, suggestedActions);
-    console.log(`📅 Selected days:`, selectedDays);
-
-    // Add to selected days
+    // Find all missed tasks for this subject TODAY
+    const today = new Date().toISOString().split('T')[0];
     const currentPlan = JSON.parse(localStorage.getItem('studyPlan')) || [];
     
-    suggestedActions.forEach((action, index) => {
-      const task = createTaskFromAction(action, userProfile);
-      const scheduleDate = new Date();
-      scheduleDate.setDate(scheduleDate.getDate() + selectedDays[index]);
-      task.date = scheduleDate.toISOString().split('T')[0];
-      
-      console.log(`📝 Creating scheduled task for ${task.date}:`, task);
-      currentPlan.push(task);
+    const missedTasksForSubject = currentPlan.filter(task => 
+      task.date === today && 
+      task.subject === selectedWeakness.subjectName && 
+      task.status === 'Missed'
+    );
+
+    if (missedTasksForSubject.length === 0) {
+      alert("❌ No missed tasks found for this subject today");
+      return;
+    }
+
+    console.log(`📋 Found ${missedTasksForSubject.length} missed tasks to reschedule:`, missedTasksForSubject);
+    console.log(`📅 Selected days:`, selectedDays);
+
+    // Reschedule each missed task to the selected days
+    const updatedPlan = currentPlan.map(task => {
+      const isMissedForThisSubject = missedTasksForSubject.find(m => m.id === task.id);
+      if (isMissedForThisSubject) {
+        // Find the day index to reschedule this task
+        const dayIndex = missedTasksForSubject.indexOf(isMissedForThisSubject);
+        const scheduleDate = new Date();
+        scheduleDate.setDate(scheduleDate.getDate() + selectedDays[dayIndex % selectedDays.length]);
+        
+        const rescheduledTask = {
+          ...task,
+          date: scheduleDate.toISOString().split('T')[0],
+          status: 'Pending', // Reset to Pending after rescheduling
+          isRescheduled: true,
+        };
+        console.log(`↪️ Rescheduling ${task.subject} from ${task.date} to ${rescheduledTask.date}`);
+        return rescheduledTask;
+      }
+      return task;
     });
 
-    // Save all at once
-    localStorage.setItem('studyPlan', JSON.stringify(currentPlan));
-    console.log(`💾 Scheduled tasks saved to localStorage`);
+    // Save updated plan
+    localStorage.setItem('studyPlan', JSON.stringify(updatedPlan));
+    console.log(`💾 Rescheduled tasks saved to localStorage`);
+    alert(`📅 Rescheduled ${missedTasksForSubject.length} missed tasks to selected days!`);
 
-    // Show alert
-    alert(`📅 Scheduled 3 actions for selected days!`);
-
-    // Force refresh - small delay to ensure localStorage is written
+    // Refresh and recalculate weaknesses
     setTimeout(() => {
-      // Manually reload from localStorage and update state
-      const updatedPlan = JSON.parse(localStorage.getItem('studyPlan')) || [];
+      const finalPlan = JSON.parse(localStorage.getItem('studyPlan')) || [];
       const updatedProfile = JSON.parse(localStorage.getItem('userProfile'));
       
-      console.log(`🔄 Recalculating weaknesses from fresh data...`);
-      console.log(`📊 Updated plan size: ${updatedPlan.length}`);
-      
-      const updatedWeaknesses = findWeakSubjectsWithCauses(updatedPlan, updatedProfile);
-      console.log(`🔄 Recalculated weaknesses:`, updatedWeaknesses);
+      const updatedWeaknesses = findWeakSubjectsWithCauses(finalPlan, updatedProfile);
       
       // Check if current weakness still exists
       const stillWeak = updatedWeaknesses.find(w => w.subjectName === selectedWeakness.subjectName);
       
       if (stillWeak) {
-        console.log(`✅ ${selectedWeakness.subjectName} still weak`);
+        console.log(`✅ ${selectedWeakness.subjectName} still has issues`);
         setWeakSubjects(updatedWeaknesses);
         selectWeakness(stillWeak);
       } else {
-        console.log(`🎉 ${selectedWeakness.subjectName} no longer weak! Hiding card`);
+        console.log(`🎉 ${selectedWeakness.subjectName} tasks rescheduled!`);
         setWeakSubjects(updatedWeaknesses);
         setSelectedWeakness(null);
-        
-        if (updatedWeaknesses.length === 0) {
-          setTimeout(() => {
-            alert(`🎉 Great job! No more weak subjects!`);
-          }, 100);
-        } else {
-          setTimeout(() => {
-            alert(`✅ Moving to next weakness...`);
-            selectWeakness(updatedWeaknesses[0]);
-          }, 100);
-        }
+        refreshPlanFromStorage();
       }
-    }, 500);
+    }, 300);
     
     setShowDatePicker(false);
   };
@@ -281,11 +318,11 @@ const WeaknessActionCard = () => {
                 Selected: {selectedDays.length > 0 ? selectedDays.map(d => `+${d} days`).join(', ') : 'None'}
               </p>
               <button
-                onClick={scheduleTheseNow}
+                onClick={rescheduleMissedTasks}
                 disabled={selectedDays.length === 0}
                 className="w-full px-4 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 disabled:bg-slate-400 transition-colors"
               >
-                ✅ Schedule Tasks
+                ✅ Reschedule Missed Tasks
               </button>
             </div>
           )}

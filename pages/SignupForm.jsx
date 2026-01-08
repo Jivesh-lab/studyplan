@@ -21,7 +21,7 @@ const SignupForm = () => {
 
     try {
       await signup({ name, email, password });
-      navigate("/onboarding", { replace: true });
+      navigate("/login", { replace: true });
     } catch (error) {
       setErr(error?.response?.data?.message || "Signup failed");
     } finally {
@@ -106,7 +106,7 @@ const SignupForm = () => {
           <div className="h-px bg-slate-200 flex-1" />
         </div>
 
-        <GoogleSignInButton />
+        <GoogleSignInButton mode="signup" />
 
         <p className="mt-5 text-sm text-slate-600">
           Already have an account?{" "}

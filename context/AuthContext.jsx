@@ -48,6 +48,25 @@ export const AuthProvider = ({ children }) => {
     window.location.href = "/login";
   };
 
+  const resetData = () => {
+    // Clear all data including auth and study plan
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
+    localStorage.removeItem(PROFILE_KEY);
+    localStorage.removeItem("studyPlan");
+    localStorage.removeItem("studyStreak");
+    localStorage.removeItem("achievements");
+    localStorage.removeItem("exams");
+    localStorage.removeItem("weaknesses");
+    localStorage.removeItem("tasks");
+    
+    setToken("");
+    setUser(null);
+    
+    // Redirect to onboarding page to start fresh
+    window.location.href = "/onboarding";
+  };
+
   const login = async ({ email, password }) => {
     const res = await loginApi({ email, password });
     persist(res.data);
@@ -55,8 +74,9 @@ export const AuthProvider = ({ children }) => {
   };
 
   const signup = async ({ name, email, password }) => {
+    // Just create the account, don't authenticate yet
+    // User must login after signup
     const res = await signupApi({ name, email, password });
-    persist(res.data);
     return res.data;
   };
 
@@ -77,6 +97,7 @@ export const AuthProvider = ({ children }) => {
       signup,
       googleLogin,
       logout,
+      resetData,
       setUser,
     }),
     [token, user, loading, isAuthenticated, onboardingCompleted]

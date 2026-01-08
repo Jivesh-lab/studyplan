@@ -1,7 +1,7 @@
 import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 
-import { StudyPlanProvider } from "./context/StudyPlanContext.jsx";
+import StudyPlanProvider from "./context/StudyPlanContext.jsx";
 import { AuthProvider } from "./context/AuthContext.jsx";
 
 import { DndProvider } from "react-dnd";

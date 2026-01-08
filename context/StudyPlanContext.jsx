@@ -8,7 +8,8 @@ import { adaptPlan } from "../utils/planner.js";
 
 /* ===================== CONTEXT ===================== */
 /* IMPORTANT: keep context default STABLE */
-export const StudyPlanContext = createContext(null);
+const StudyPlanContext = createContext(null);
+export { StudyPlanContext };
 
 /* ===================== PROVIDER ===================== */
 export const StudyPlanProvider = ({ children }) => {
@@ -331,3 +332,5 @@ export const StudyPlanProvider = ({ children }) => {
     </StudyPlanContext.Provider>
   );
 };
+
+export default StudyPlanProvider;

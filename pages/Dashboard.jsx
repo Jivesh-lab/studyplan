@@ -18,7 +18,7 @@ const LogOutIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" heig
 const Dashboard = ({ onReset }) => {
   const [activeView, setActiveView] = useState('daily');
   const { userProfile } = useContext(StudyPlanContext);
-  const { logout, user } = useAuth(); // ADD THIS LINE
+  const { logout, user, resetData } = useAuth(); // ADD THIS LINE
   
   const renderView = () => {
     switch(activeView) {
@@ -62,7 +62,7 @@ const Dashboard = ({ onReset }) => {
           <NavItem view="exams" icon={<BookIcon />} label="Exams" />
         </nav>
         <div className="hidden md:block mt-auto space-y-2">
-          <button onClick={onReset} className="w-full flex items-center p-3 text-slate-600 hover:bg-red-100 hover:text-red-700 rounded-lg transition-colors">
+          <button onClick={resetData} className="w-full flex items-center p-3 text-slate-600 hover:bg-red-100 hover:text-red-700 rounded-lg transition-colors">
             <SettingsIcon />
             <span className="ml-3 font-medium">Reset Data</span>
           </button>
